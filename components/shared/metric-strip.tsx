@@ -8,7 +8,7 @@ interface MetricStripProps {
 
 export function MetricStrip({ items }: MetricStripProps) {
   return (
-    <section className="grid gap-px overflow-hidden rounded-[28px] border border-line bg-line md:grid-cols-2 xl:grid-cols-4">
+    <section className="grid gap-px overflow-hidden rounded-lg border border-line bg-line md:grid-cols-2 xl:grid-cols-4">
       {items.map((item) => (
         <div key={item.label} className="bg-surface px-5 py-5">
           <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">{item.label}</p>

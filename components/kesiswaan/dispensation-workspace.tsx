@@ -5,11 +5,17 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
-import { apiRequest } from "@/lib/api/client";
+import { kesiswaanApi } from "@/lib/api/domain";
 import { DataTable } from "@/components/shared/data-table";
+import { EmptyState } from "@/components/shared/empty-state";
 import { PageMotion } from "@/components/shared/page-motion";
 import { FormField } from "@/components/forms/form-field";
 import type { DispensationFormInput } from "@/lib/types";
+
+const optionalNumber = z.preprocess(
+  (value) => (value === "" || value === null || value === undefined ? undefined : value),
+  z.coerce.number().min(1).optional()
+);
 
 const schema = z.object({
   title: z.string().min(1),
@@ -18,15 +24,31 @@ const schema = z.object({
   startPeriodNo: z.coerce.number().min(1),
   endPeriodNo: z.coerce.number().min(1),
   returnRequired: z.boolean(),
-  expectedReturnPeriodNo: z.union([z.coerce.number(), z.undefined()]).optional(),
+  expectedReturnPeriodNo: optionalNumber,
   letterNumber: z.string().optional()
+}).superRefine((values, context) => {
+  if (values.endPeriodNo < values.startPeriodNo) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["endPeriodNo"],
+      message: "Jam akhir tidak boleh lebih kecil dari jam mulai."
+    });
+  }
+
+  if (values.returnRequired && !values.expectedReturnPeriodNo) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["expectedReturnPeriodNo"],
+      message: "Jam kembali wajib diisi jika siswa wajib kembali."
+    });
+  }
 });
 
 export function DispensationWorkspace() {
   const queryClient = useQueryClient();
   const dispensationsQuery = useQuery({
     queryKey: ["dispensations"],
-    queryFn: () => apiRequest<Record<string, any>[]>("/dispensations")
+    queryFn: () => kesiswaanApi.dispensations()
   });
   const form = useForm<DispensationFormInput>({
     resolver: zodResolver(schema),
@@ -38,11 +60,7 @@ export function DispensationWorkspace() {
     }
   });
   const createMutation = useMutation({
-    mutationFn: async (values: DispensationFormInput) =>
-      apiRequest("/dispensations", {
-        method: "POST",
-        body: JSON.stringify(values)
-      }),
+    mutationFn: async (values: DispensationFormInput) => kesiswaanApi.createDispensation(values),
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ["dispensations"] });
       form.reset();
@@ -52,7 +70,7 @@ export function DispensationWorkspace() {
   return (
     <PageMotion>
       <section className="grid gap-6 xl:grid-cols-[1.2fr_0.8fr]">
-        <div className="space-y-4 rounded-[28px] border border-line bg-surface/85 p-6 shadow-panel">
+        <div className="space-y-4 rounded-lg border border-line bg-surface/85 p-6 shadow-panel">
           <header>
             <p className="text-xs uppercase tracking-[0.2em] text-[var(--color-accent)]">Kesiswaan</p>
             <h1 className="mt-2 text-3xl font-semibold">Draft dan publikasi dispensasi</h1>
@@ -79,9 +97,15 @@ export function DispensationWorkspace() {
             rows={dispensationsQuery.data ?? []}
             rowKey={(row) => row.id}
           />
+          {dispensationsQuery.isError ? (
+            <EmptyState
+              title="Gagal memuat dispensasi"
+              description={`Periksa koneksi API dan role Kesiswaan. Detail: ${dispensationsQuery.error.message}`}
+            />
+          ) : null}
         </div>
 
-        <div className="rounded-[28px] border border-line bg-surface/85 p-6 shadow-panel">
+        <div className="rounded-lg border border-line bg-surface/85 p-6 shadow-panel">
           <h2 className="text-xl font-semibold">Buat draft dispensasi</h2>
           <form onSubmit={form.handleSubmit((values) => createMutation.mutate(values))} className="mt-4 space-y-4">
             {[
@@ -99,6 +123,11 @@ export function DispensationWorkspace() {
             <button className="w-full rounded-full bg-[var(--color-accent)] px-5 py-3 font-semibold text-white">
               {createMutation.isPending ? "Menyimpan..." : "Simpan Draft"}
             </button>
+            {createMutation.isError ? (
+              <p className="rounded-lg bg-rose-50 px-4 py-3 text-sm text-rose-700">
+                Gagal membuat draft. Detail: {createMutation.error.message}
+              </p>
+            ) : null}
           </form>
         </div>
       </section>

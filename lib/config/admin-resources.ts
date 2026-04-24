@@ -134,7 +134,7 @@ export const ADMIN_RESOURCES: Record<string, AdminResourceConfig> = {
   students: {
     key: "students",
     title: "Siswa",
-    subtitle: "Master identitas siswa, NIS, dan placeholder barcode/RFID.",
+    subtitle: "Master identitas siswa. NIS menjadi identitas utama untuk absensi dan tap event.",
     endpoint: "/students",
     idKey: "id",
     columns: [
@@ -155,8 +155,6 @@ export const ADMIN_RESOURCES: Record<string, AdminResourceConfig> = {
       { name: "fullName", label: "Nama Lengkap", type: "text", required: true },
       { name: "gender", label: "Gender", type: "select", options: genderOptions },
       { name: "birthDate", label: "Tanggal Lahir", type: "date" },
-      { name: "barcodeValue", label: "Barcode", type: "text" },
-      { name: "rfidUid", label: "RFID UID", type: "text" },
       { name: "isActive", label: "Aktif", type: "checkbox" }
     ]
   },

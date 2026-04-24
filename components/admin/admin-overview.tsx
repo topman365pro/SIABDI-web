@@ -1,7 +1,9 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { apiRequest } from "@/lib/api/client";
+import { adminApi } from "@/lib/api/domain";
+import { ATTENDANCE_PRIORITY } from "@/lib/config/status";
+import { EmptyState } from "@/components/shared/empty-state";
 import { MetricStrip } from "@/components/shared/metric-strip";
 import { PageMotion } from "@/components/shared/page-motion";
 import { StatusBadge } from "@/components/shared/status-badge";
@@ -9,11 +11,7 @@ import { StatusBadge } from "@/components/shared/status-badge";
 export function AdminOverview() {
   const overviewQuery = useQuery({
     queryKey: ["admin-overview"],
-    queryFn: () =>
-      apiRequest<{
-        counters: Record<string, number>;
-        attendanceSummary: Record<string, number>;
-      }>("/admin/overview")
+    queryFn: () => adminApi.overview()
   });
 
   const counters = overviewQuery.data?.counters;
@@ -28,7 +26,7 @@ export function AdminOverview() {
           </p>
           <h1 className="text-3xl font-semibold">Ikhtisar operasional sekolah</h1>
           <p className="max-w-3xl text-sm text-slate-600">
-            Lihat distribusi master data dan ringkasan absensi harian sebelum masuk ke modul CRUD.
+            Pantau kesiapan data harian: master data, jadwal, base check jam pertama, dan sinkronisasi status per jam.
           </p>
         </header>
 
@@ -41,7 +39,14 @@ export function AdminOverview() {
           ]}
         />
 
-        <section className="rounded-[28px] border border-line bg-surface/85 p-6 shadow-panel">
+        {overviewQuery.isError ? (
+          <EmptyState
+            title="Gagal memuat overview"
+            description={`Periksa koneksi API dan role ADMIN_TU. Detail: ${overviewQuery.error.message}`}
+          />
+        ) : null}
+
+        <section className="rounded-lg border border-line bg-surface/85 p-6 shadow-panel">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-xs uppercase tracking-[0.18em] text-[var(--color-accent)]">Absensi Hari Ini</p>
@@ -50,10 +55,10 @@ export function AdminOverview() {
           </div>
           <div className="mt-6 flex flex-wrap gap-3">
             {summary
-              ? (Object.entries(summary) as Array<[any, number]>).map(([status, count]) => (
-                  <div key={status} className="rounded-[22px] border border-line bg-canvas px-4 py-4">
+              ? ATTENDANCE_PRIORITY.map((status) => (
+                  <div key={status} className="rounded-lg border border-line bg-canvas px-4 py-4">
                     <StatusBadge status={status} />
-                    <p className="mt-3 text-2xl font-semibold">{count}</p>
+                    <p className="mt-3 text-2xl font-semibold">{summary[status] ?? 0}</p>
                   </div>
                 ))
               : "Memuat ringkasan..."}

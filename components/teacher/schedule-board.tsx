@@ -1,13 +1,12 @@
 "use client";
 
-import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
-import { apiRequest } from "@/lib/api/client";
-import type { TeacherScheduleItem } from "@/lib/types";
+import { teacherApi } from "@/lib/api/domain";
 import { FilterBar } from "@/components/shared/filter-bar";
 import { EmptyState } from "@/components/shared/empty-state";
 import { PageMotion } from "@/components/shared/page-motion";
+import { ScheduleList } from "@/components/shared/schedule-list";
 
 export function TeacherScheduleBoard({
   mode = "dashboard"
@@ -17,8 +16,7 @@ export function TeacherScheduleBoard({
   const [date, setDate] = useState(new Date().toISOString().slice(0, 10));
   const schedulesQuery = useQuery({
     queryKey: ["teacher-schedules", date],
-    queryFn: () =>
-      apiRequest<TeacherScheduleItem[]>(`/teacher/me/schedules?date=${encodeURIComponent(date)}`)
+    queryFn: () => teacherApi.schedules(date)
   });
 
   return (
@@ -30,7 +28,8 @@ export function TeacherScheduleBoard({
             {mode === "dashboard" ? "Jam mengajar hari ini" : "Jadwal mengajar"}
           </h1>
           <p className="max-w-3xl text-sm text-slate-600">
-            Pilih jam pelajaran untuk melakukan base check atau cross-check kehadiran sesuai jadwal Anda.
+            Pilih jam pelajaran. Jam pertama memakai base check, jam berikutnya memakai cross-check dan status final
+            mengikuti prioritas Dispensasi, Sakit, Izin, Bolos, Masuk, lalu Alfa.
           </p>
         </header>
 
@@ -48,29 +47,7 @@ export function TeacherScheduleBoard({
             description="Belum ada jadwal aktif untuk tanggal yang dipilih."
           />
         ) : (
-          <div className="grid gap-4">
-            {schedulesQuery.data?.map((item) => (
-              <Link
-                key={item.id}
-                href={`/app/guru/kelas/${item.class.id}/periode/${item.lessonPeriodNo}?date=${date}&scheduleId=${item.id}`}
-                className="rounded-[26px] border border-line bg-surface/85 p-5 shadow-panel transition hover:-translate-y-0.5"
-              >
-                <div className="flex items-start justify-between gap-4">
-                  <div>
-                    <p className="text-xs uppercase tracking-[0.18em] text-[var(--color-accent)]">
-                      {item.lessonPeriod.label}
-                    </p>
-                    <h3 className="mt-2 text-2xl font-semibold">{item.class.name}</h3>
-                    <p className="mt-1 text-sm text-slate-600">{item.subject.name}</p>
-                  </div>
-                  <div className="text-right text-sm text-slate-600">
-                    <p>{item.lessonPeriod.startTime.slice(0, 5)} - {item.lessonPeriod.endTime.slice(0, 5)}</p>
-                    <p className="mt-1">{item.roomName ?? "Ruang belum diisi"}</p>
-                  </div>
-                </div>
-              </Link>
-            ))}
-          </div>
+          <ScheduleList items={schedulesQuery.data ?? []} date={date} />
         )}
       </section>
     </PageMotion>

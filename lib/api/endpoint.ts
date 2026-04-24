@@ -6,7 +6,22 @@ export const DEFAULT_API_BASE_URL =
   process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:3000/api/v1";
 
 export function normalizeApiBaseUrl(value: string) {
-  return value.trim().replace(/\/+$/, "");
+  const trimmed = value.trim().replace(/\/+$/, "");
+  const url = new URL(trimmed);
+  const pathname = url.pathname.replace(/\/+$/, "");
+
+  if (pathname === "" || pathname === "/") {
+    url.pathname = "/api/v1";
+  } else if (pathname === "/api") {
+    url.pathname = "/api/v1";
+  } else if (!pathname.endsWith("/api/v1")) {
+    url.pathname = `${pathname}/api/v1`.replace(/\/{2,}/g, "/");
+  }
+
+  url.search = "";
+  url.hash = "";
+
+  return url.toString().replace(/\/+$/, "");
 }
 
 export function isValidApiBaseUrl(value: string) {
@@ -20,7 +35,7 @@ export function isValidApiBaseUrl(value: string) {
 
 export function getClientApiBaseUrl() {
   if (typeof window === "undefined") {
-    return DEFAULT_API_BASE_URL;
+    return normalizeApiBaseUrl(DEFAULT_API_BASE_URL);
   }
 
   const stored = window.localStorage.getItem(API_ENDPOINT_STORAGE_KEY);

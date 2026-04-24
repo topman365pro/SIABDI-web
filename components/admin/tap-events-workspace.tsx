@@ -1,15 +1,16 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { apiRequest } from "@/lib/api/client";
+import { adminApi } from "@/lib/api/domain";
 import { DataTable } from "@/components/shared/data-table";
+import { EmptyState } from "@/components/shared/empty-state";
 import { PageMotion } from "@/components/shared/page-motion";
 import { formatDisplayDate } from "@/lib/utils/format";
 
 export function TapEventsWorkspace() {
   const tapEventsQuery = useQuery({
     queryKey: ["tap-events"],
-    queryFn: () => apiRequest<Record<string, any>[]>("/tap-events")
+    queryFn: () => adminApi.list("/tap-events")
   });
 
   return (
@@ -19,7 +20,7 @@ export function TapEventsWorkspace() {
           <p className="text-xs uppercase tracking-[0.2em] text-[var(--color-accent)]">Admin / TU</p>
           <h1 className="text-3xl font-semibold">Tap Events</h1>
           <p className="max-w-3xl text-sm text-slate-600">
-            Placeholder integrasi barcode, RFID, atau NFC. Event mentah disimpan untuk kebutuhan IoT berikutnya.
+            Placeholder integrasi barcode, RFID, atau NFC. Semua input perangkat dikorelasikan ke NIS siswa.
           </p>
         </header>
 
@@ -34,6 +35,12 @@ export function TapEventsWorkspace() {
           rows={tapEventsQuery.data ?? []}
           rowKey={(row) => row.id}
         />
+        {tapEventsQuery.isError ? (
+          <EmptyState
+            title="Gagal memuat tap events"
+            description={`Periksa koneksi API dan role ADMIN_TU. Detail: ${tapEventsQuery.error.message}`}
+          />
+        ) : null}
       </section>
     </PageMotion>
   );

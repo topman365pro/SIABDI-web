@@ -8,6 +8,18 @@ export type AttendanceStatus =
   | "DISPENSASI"
   | "BOLOS";
 
+export type AttendanceSource =
+  | "BASE_CHECK"
+  | "CROSS_CHECK"
+  | "BK_PERMISSION"
+  | "DISPENSATION"
+  | "SYSTEM_DERIVED"
+  | "TAP_IN"
+  | "TAP_OUT"
+  | "MANUAL_ADMIN";
+
+export type TeacherObservation = "PRESENT" | "ABSENT";
+
 export interface CurrentUser {
   sub: string;
   username: string;
@@ -24,7 +36,7 @@ export interface AuthSession {
 export interface AttendanceStatusViewModel {
   value: AttendanceStatus;
   label: string;
-  tone: "neutral" | "success" | "warning" | "danger" | "accent";
+  tone: "neutral" | "success" | "warning" | "danger" | "accent" | "info";
 }
 
 export interface TeacherScheduleItem {
@@ -58,7 +70,11 @@ export interface ClassPeriodRosterItem {
     id: string;
     status: AttendanceStatus;
     note?: string | null;
-    source: string;
+    source: AttendanceSource;
+    lessonPeriodNo?: number;
+    bkPermissionId?: string | null;
+    dispensationId?: string | null;
+    verifiedAt?: string | null;
   } | null;
 }
 
@@ -79,7 +95,7 @@ export interface StudentHistoryEntry {
   lessonPeriodNo: number;
   status: AttendanceStatus;
   note?: string | null;
-  source: string;
+  source: AttendanceSource;
 }
 
 export interface BkPermissionFormInput {

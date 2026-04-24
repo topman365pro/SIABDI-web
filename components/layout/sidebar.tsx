@@ -34,7 +34,7 @@ export function Sidebar({ currentUser }: { currentUser: CurrentUser }) {
               key={item.href}
               href={item.href}
               className={cn(
-                "relative block overflow-hidden rounded-[20px] px-4 py-3 transition",
+                "relative block overflow-hidden rounded-lg px-4 py-3 transition",
                 active ? "bg-surface text-ink shadow-panel" : "hover:bg-surface/60"
               )}
             >

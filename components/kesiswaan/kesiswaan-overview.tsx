@@ -1,18 +1,15 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { apiRequest } from "@/lib/api/client";
+import { kesiswaanApi } from "@/lib/api/domain";
 import { MetricStrip } from "@/components/shared/metric-strip";
 import { PageMotion } from "@/components/shared/page-motion";
+import { EmptyState } from "@/components/shared/empty-state";
 
 export function KesiswaanOverview() {
   const overviewQuery = useQuery({
     queryKey: ["kesiswaan-overview"],
-    queryFn: () =>
-      apiRequest<{
-        counters: Record<string, number>;
-        latestDispensations: Array<Record<string, any>>;
-      }>("/kesiswaan/overview")
+    queryFn: () => kesiswaanApi.overview()
   });
 
   return (
@@ -30,6 +27,12 @@ export function KesiswaanOverview() {
             { label: "Peserta Aktif", value: overviewQuery.data?.counters.participatingStudents ?? "-" }
           ]}
         />
+        {overviewQuery.isError ? (
+          <EmptyState
+            title="Gagal memuat overview Kesiswaan"
+            description={`Periksa koneksi API dan role akun. Detail: ${overviewQuery.error.message}`}
+          />
+        ) : null}
       </section>
     </PageMotion>
   );

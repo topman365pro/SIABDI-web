@@ -2,14 +2,14 @@
 
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
-import { apiRequest } from "@/lib/api/client";
-import type { ParentStudentSummary } from "@/lib/types";
+import { parentApi } from "@/lib/api/domain";
+import { EmptyState } from "@/components/shared/empty-state";
 import { PageMotion } from "@/components/shared/page-motion";
 
 export function ChildrenOverview() {
   const childrenQuery = useQuery({
     queryKey: ["parent-students"],
-    queryFn: () => apiRequest<ParentStudentSummary[]>("/parent/me/students")
+    queryFn: () => parentApi.children()
   });
 
   return (
@@ -23,9 +23,23 @@ export function ChildrenOverview() {
           </p>
         </header>
 
+        {childrenQuery.isError ? (
+          <EmptyState
+            title="Gagal memuat data anak"
+            description={`Periksa koneksi API dan keterhubungan akun parent. Detail: ${childrenQuery.error.message}`}
+          />
+        ) : null}
+
+        {!childrenQuery.isLoading && (childrenQuery.data ?? []).length === 0 ? (
+          <EmptyState
+            title="Belum ada anak terhubung"
+            description="Hubungi Admin/TU agar akun orang tua ditautkan ke data siswa."
+          />
+        ) : null}
+
         <div className="grid gap-4">
           {(childrenQuery.data ?? []).map((child) => (
-            <div key={child.id} className="rounded-[28px] border border-line bg-surface/90 p-5 shadow-panel">
+            <div key={child.id} className="rounded-lg border border-line bg-surface/90 p-5 shadow-panel">
               <p className="text-xs uppercase tracking-[0.18em] text-[var(--color-accent)]">{child.relationship}</p>
               <h2 className="mt-2 text-2xl font-semibold">{child.fullName}</h2>
               <p className="mt-1 text-sm text-slate-600">

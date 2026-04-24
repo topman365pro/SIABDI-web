@@ -16,7 +16,7 @@ export function ParentShell({
   const router = useRouter();
 
   return (
-    <div className="min-h-screen bg-[linear-gradient(180deg,#f7f3ea_0%,#ffffff_100%)]">
+    <div className="min-h-screen bg-canvas">
       <header className="border-b border-line bg-surface/90 px-4 py-5 backdrop-blur">
         <div className="mx-auto flex max-w-5xl items-center justify-between gap-4">
           <div>

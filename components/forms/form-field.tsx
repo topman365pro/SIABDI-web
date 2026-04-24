@@ -23,12 +23,12 @@ export function FormField({ field, control, options = [] }: FormFieldProps) {
             <textarea
               {...controllerField}
               rows={4}
-              className="w-full rounded-[18px] border border-line bg-canvas px-4 py-3 outline-none"
+              className="w-full rounded-lg border border-line bg-canvas px-4 py-3 outline-none"
             />
           ) : field.type === "select" ? (
             <select
               {...controllerField}
-              className="w-full rounded-[18px] border border-line bg-canvas px-4 py-3 outline-none"
+              className="w-full rounded-lg border border-line bg-canvas px-4 py-3 outline-none"
             >
               <option value="">Pilih...</option>
               {options.map((option) => (
@@ -38,7 +38,7 @@ export function FormField({ field, control, options = [] }: FormFieldProps) {
               ))}
             </select>
           ) : field.type === "checkbox" ? (
-            <span className="flex items-center gap-3 rounded-[18px] border border-line bg-canvas px-4 py-3">
+            <span className="flex items-center gap-3 rounded-lg border border-line bg-canvas px-4 py-3">
               <input
                 type="checkbox"
                 checked={Boolean(controllerField.value)}
@@ -50,7 +50,7 @@ export function FormField({ field, control, options = [] }: FormFieldProps) {
             <input
               {...controllerField}
               type={field.type}
-              className="w-full rounded-[18px] border border-line bg-canvas px-4 py-3 outline-none"
+              className="w-full rounded-lg border border-line bg-canvas px-4 py-3 outline-none"
             />
           )}
           {fieldState.error ? (

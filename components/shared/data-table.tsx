@@ -18,7 +18,7 @@ interface DataTableProps<T> {
 export function DataTable<T>({ columns, rows, rowKey, onRowClick }: DataTableProps<T>) {
   return (
     <>
-      <div className="hidden overflow-hidden rounded-[28px] border border-line bg-surface/85 shadow-panel lg:block">
+      <div className="hidden overflow-hidden rounded-lg border border-line bg-surface/85 shadow-panel lg:block">
         <table className="min-w-full border-collapse">
           <thead>
             <tr className="border-b border-line bg-canvas/70">
@@ -59,7 +59,7 @@ export function DataTable<T>({ columns, rows, rowKey, onRowClick }: DataTablePro
             key={rowKey(row)}
             type="button"
             onClick={() => onRowClick?.(row)}
-            className="rounded-[24px] border border-line bg-surface/85 p-4 text-left shadow-panel"
+            className="rounded-lg border border-line bg-surface/85 p-4 text-left shadow-panel"
           >
             {columns.map((column) => (
               <div

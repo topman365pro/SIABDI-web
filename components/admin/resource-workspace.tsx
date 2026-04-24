@@ -11,7 +11,7 @@ import {
   type AdminFieldConfig,
   type AdminResourceConfig
 } from "@/lib/config/admin-resources";
-import { apiRequest } from "@/lib/api/client";
+import { adminApi } from "@/lib/api/domain";
 import { PageMotion } from "@/components/shared/page-motion";
 import { FilterBar } from "@/components/shared/filter-bar";
 import { EmptyState } from "@/components/shared/empty-state";
@@ -19,7 +19,7 @@ import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { DataTable, type DataColumn } from "@/components/shared/data-table";
 import { FormField } from "@/components/forms/form-field";
 import { cn } from "@/lib/utils/cn";
-import { formatDisplayDate } from "@/lib/utils/format";
+import { formatDisplayDate, formatTime } from "@/lib/utils/format";
 
 function getValueByPath(input: any, path: string) {
   return path.split(".").reduce((value, key) => {
@@ -42,6 +42,10 @@ function normalizeValue(field: AdminFieldConfig, value: unknown) {
 
   if (field.type === "number") {
     return value === "" || value === undefined || value === null ? undefined : Number(value);
+  }
+
+  if (field.type === "time" && typeof value === "string" && /^\d{2}:\d{2}$/.test(value)) {
+    return `1970-01-01T${value}:00.000Z`;
   }
 
   return value === "" ? undefined : value;
@@ -68,7 +72,7 @@ export function AdminResourceWorkspace({ resourceKey }: { resourceKey: string })
 
   const listQuery = useQuery({
     queryKey: ["admin-resource", config.key],
-    queryFn: () => apiRequest<Record<string, any>[]>(config.endpoint)
+    queryFn: () => adminApi.list(config.endpoint)
   });
 
   const selectQueries = useQueries({
@@ -76,7 +80,7 @@ export function AdminResourceWorkspace({ resourceKey }: { resourceKey: string })
       .filter((field) => field.selectSource)
       .map((field) => ({
         queryKey: ["admin-select", config.key, field.name],
-        queryFn: () => apiRequest<Record<string, any>[]>(field.selectSource!.endpoint)
+        queryFn: () => adminApi.list(field.selectSource!.endpoint)
       }))
   });
 
@@ -108,16 +112,10 @@ export function AdminResourceWorkspace({ resourceKey }: { resourceKey: string })
       );
 
       if (activeRow) {
-        return apiRequest(`${config.endpoint}/${activeRow[config.idKey]}`, {
-          method: "PATCH",
-          body: JSON.stringify(payload)
-        });
+        return adminApi.update(config.endpoint, activeRow[config.idKey], payload);
       }
 
-      return apiRequest(config.createPath ? config.createPath(values) : config.endpoint, {
-        method: "POST",
-        body: JSON.stringify(payload)
-      });
+      return adminApi.create(config.createPath ? config.createPath(values) : config.endpoint, payload);
     },
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ["admin-resource", config.key] });
@@ -129,9 +127,7 @@ export function AdminResourceWorkspace({ resourceKey }: { resourceKey: string })
 
   const deleteMutation = useMutation({
     mutationFn: async (row: Record<string, any>) => {
-      return apiRequest(`${config.endpoint}/${row[config.idKey]}`, {
-        method: "DELETE"
-      });
+      return adminApi.remove(config.endpoint, row[config.idKey]);
     },
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ["admin-resource", config.key] });
@@ -179,13 +175,19 @@ export function AdminResourceWorkspace({ resourceKey }: { resourceKey: string })
     setShowForm(true);
     form.reset(
       config.fields.reduce(
-        (accumulator, field) => ({
-          ...accumulator,
-          [field.name]:
-            getValueByPath(row, field.name) ??
-            row[field.name] ??
-            (field.type === "checkbox" ? false : "")
-        }),
+        (accumulator, field) => {
+          const value = getValueByPath(row, field.name) ?? row[field.name];
+
+          return {
+            ...accumulator,
+            [field.name]:
+              field.type === "time" && value
+                ? formatTime(value)
+                : field.type === "date" && value
+                  ? String(value).slice(0, 10)
+                  : value ?? (field.type === "checkbox" ? false : "")
+          };
+        },
         {}
       )
     );
@@ -218,7 +220,7 @@ export function AdminResourceWorkspace({ resourceKey }: { resourceKey: string })
         />
 
         {listQuery.isLoading ? (
-          <div className="rounded-[28px] border border-line bg-surface/80 p-6 text-sm text-slate-500">
+          <div className="rounded-lg border border-line bg-surface/80 p-6 text-sm text-slate-500">
             Memuat data {config.title.toLowerCase()}...
           </div>
         ) : filteredRows.length === 0 ? (
@@ -274,11 +276,18 @@ export function AdminResourceWorkspace({ resourceKey }: { resourceKey: string })
             onRowClick={openEdit}
           />
         )}
+
+        {listQuery.isError ? (
+          <EmptyState
+            title={`Gagal memuat ${config.title.toLowerCase()}`}
+            description={`Periksa koneksi API, role ADMIN_TU, dan endpoint ${config.endpoint}. Detail: ${listQuery.error.message}`}
+          />
+        ) : null}
       </section>
 
       {showForm ? (
         <div className="fixed inset-0 z-40 overflow-y-auto bg-slate-950/35 px-4 py-8">
-          <div className="mx-auto max-w-2xl rounded-[30px] bg-surface p-6 shadow-panel md:p-8">
+          <div className="mx-auto max-w-2xl rounded-lg bg-surface p-6 shadow-panel md:p-8">
             <div className="flex items-start justify-between gap-4">
               <div>
                 <p className="text-xs uppercase tracking-[0.2em] text-[var(--color-accent)]">
@@ -320,6 +329,11 @@ export function AdminResourceWorkspace({ resourceKey }: { resourceKey: string })
                   {saveMutation.isPending ? "Menyimpan..." : "Simpan"}
                 </button>
               </div>
+              {saveMutation.isError ? (
+                <p className="md:col-span-2 rounded-lg bg-rose-50 px-4 py-3 text-sm text-rose-700">
+                  Gagal menyimpan data. Detail: {saveMutation.error.message}
+                </p>
+              ) : null}
             </form>
           </div>
         </div>

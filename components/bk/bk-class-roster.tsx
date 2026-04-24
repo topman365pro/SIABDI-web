@@ -2,19 +2,17 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
-import { apiRequest } from "@/lib/api/client";
+import { bkApi } from "@/lib/api/domain";
 import { FilterBar } from "@/components/shared/filter-bar";
-import { StatusBadge } from "@/components/shared/status-badge";
+import { SourceBadge, StatusBadge } from "@/components/shared/status-badge";
+import { EmptyState } from "@/components/shared/empty-state";
 
 export function BkClassRoster({ classId }: { classId: string }) {
   const [date, setDate] = useState(new Date().toISOString().slice(0, 10));
   const [periodNo, setPeriodNo] = useState("1");
   const rosterQuery = useQuery({
     queryKey: ["bk-class-roster", classId, date, periodNo],
-    queryFn: () =>
-      apiRequest<Array<Record<string, any>>>(
-        `/bk-dashboard/classes/${classId}/students?date=${encodeURIComponent(date)}&periodNo=${periodNo}`
-      )
+    queryFn: () => bkApi.classRoster(classId, date, Number(periodNo))
   });
 
   return (
@@ -40,15 +38,24 @@ export function BkClassRoster({ classId }: { classId: string }) {
           />
         }
       />
+      {rosterQuery.isError ? (
+        <EmptyState
+          title="Gagal memuat roster"
+          description={`Periksa kelas, tanggal, periode, dan koneksi API. Detail: ${rosterQuery.error.message}`}
+        />
+      ) : null}
       <div className="grid gap-3">
         {(rosterQuery.data ?? []).map((item) => (
-          <div key={item.student.id} className="rounded-[24px] border border-line bg-surface/85 p-4 shadow-panel">
+          <div key={item.student.id} className="rounded-lg border border-line bg-surface/85 p-4 shadow-panel">
             <div className="flex items-center justify-between gap-4">
               <div>
                 <p className="font-semibold">{item.student.fullName}</p>
                 <p className="text-sm text-slate-500">{item.student.nis}</p>
               </div>
               {item.status ? <StatusBadge status={item.status.status} /> : <span className="text-sm">Belum ada</span>}
+            </div>
+            <div className="mt-3">
+              <SourceBadge source={item.status?.source} />
             </div>
           </div>
         ))}

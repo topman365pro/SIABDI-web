@@ -1,9 +1,55 @@
 import { clearSessionCookies, getClientSession, persistSession } from "@/lib/auth/session";
 import type { AuthSession, CurrentUser } from "@/lib/types";
-import { DEFAULT_API_BASE_URL, getClientApiBaseUrl } from "./endpoint";
+import { DEFAULT_API_BASE_URL, getClientApiBaseUrl, normalizeApiBaseUrl } from "./endpoint";
 
 interface RequestOptions extends RequestInit {
   auth?: boolean;
+}
+
+export class ApiError extends Error {
+  status: number;
+  details: unknown;
+
+  constructor(status: number, message: string, details: unknown) {
+    super(message);
+    this.name = "ApiError";
+    this.status = status;
+    this.details = details;
+  }
+}
+
+function joinApiPath(path: string) {
+  return path.startsWith("/") ? path : `/${path}`;
+}
+
+async function parseResponseError(response: Response) {
+  const text = await response.text();
+  let details: unknown = text;
+  let message = text;
+
+  if (text) {
+    try {
+      const json = JSON.parse(text) as { message?: unknown; error?: unknown };
+      details = json;
+
+      if (Array.isArray(json.message)) {
+        message = json.message.join(", ");
+      } else if (typeof json.message === "string") {
+        message = json.message;
+      } else if (typeof json.error === "string") {
+        message = json.error;
+      }
+    } catch {
+      message = text;
+    }
+  }
+
+  const fallback = `Permintaan ke server gagal (${response.status}).`;
+  return new ApiError(response.status, message || fallback, {
+    details,
+    url: response.url,
+    statusText: response.statusText
+  });
 }
 
 async function refreshSession(refreshToken: string) {
@@ -37,7 +83,7 @@ export async function apiRequest<T>(path: string, options: RequestOptions = {}):
     headers.set("Authorization", `Bearer ${session.accessToken}`);
   }
 
-  const response = await fetch(`${apiBaseUrl}${path}`, {
+  const response = await fetch(`${apiBaseUrl}${joinApiPath(path)}`, {
     ...options,
     headers
   });
@@ -51,8 +97,11 @@ export async function apiRequest<T>(path: string, options: RequestOptions = {}):
   }
 
   if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(errorText || "Permintaan ke server gagal.");
+    throw await parseResponseError(response);
+  }
+
+  if (response.status === 204) {
+    return undefined as T;
   }
 
   return response.json() as Promise<T>;
@@ -91,14 +140,18 @@ export async function serverApiRequest<T>(
 
   headers.set("Authorization", `Bearer ${accessToken}`);
 
-  const response = await fetch(`${DEFAULT_API_BASE_URL}${path}`, {
+  const response = await fetch(`${normalizeApiBaseUrl(DEFAULT_API_BASE_URL)}${joinApiPath(path)}`, {
     ...options,
     headers,
     cache: "no-store"
   });
 
   if (!response.ok) {
-    throw new Error(await response.text());
+    throw await parseResponseError(response);
+  }
+
+  if (response.status === 204) {
+    return undefined as T;
   }
 
   return response.json() as Promise<T>;

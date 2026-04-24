@@ -1,18 +1,16 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { apiRequest } from "@/lib/api/client";
+import { bkApi } from "@/lib/api/domain";
 import { MetricStrip } from "@/components/shared/metric-strip";
 import { PageMotion } from "@/components/shared/page-motion";
+import { EmptyState } from "@/components/shared/empty-state";
+import { StatusBadge } from "@/components/shared/status-badge";
 
 export function BkOverview() {
   const overviewQuery = useQuery({
     queryKey: ["bk-overview"],
-    queryFn: () =>
-      apiRequest<{
-        counters: Record<string, number>;
-        latestPermissions: Array<Record<string, any>>;
-      }>("/bk/overview")
+    queryFn: () => bkApi.overview()
   });
 
   return (
@@ -35,18 +33,25 @@ export function BkOverview() {
           ]}
         />
 
-        <section className="rounded-[28px] border border-line bg-surface/85 p-6 shadow-panel">
+        {overviewQuery.isError ? (
+          <EmptyState
+            title="Gagal memuat overview BK"
+            description={`Periksa koneksi API dan role akun. Detail: ${overviewQuery.error.message}`}
+          />
+        ) : null}
+
+        <section className="rounded-lg border border-line bg-surface/85 p-6 shadow-panel">
           <h2 className="text-2xl font-semibold">Entri terbaru</h2>
           <div className="mt-4 grid gap-3">
             {(overviewQuery.data?.latestPermissions ?? []).map((item) => (
-              <div key={item.id} className="rounded-[22px] border border-line bg-canvas p-4">
+              <div key={item.id} className="rounded-lg border border-line bg-canvas p-4">
                 <div className="flex items-start justify-between gap-4">
                   <div>
                     <p className="text-sm font-semibold">{item.student.fullName}</p>
                     <p className="text-sm text-slate-500">{item.class.name}</p>
                   </div>
                   <div className="text-right text-sm">
-                    <p className="font-semibold">{item.permissionKind}</p>
+                    <StatusBadge status={item.permissionKind} />
                     <p className="text-slate-500">
                       Jam {item.startPeriodNo} - {item.endPeriodNo}
                     </p>

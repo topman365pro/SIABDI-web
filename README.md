@@ -1,6 +1,15 @@
-# SIABDI Web
+# SIABDI Web v4
 
-Frontend Next.js untuk Sistem Informasi Absensi Sekolah Terintegrasi.
+Frontend Next.js untuk Sistem Informasi Absensi Sekolah Terintegrasi berbasis alur absensi per jam.
+
+V4 memisahkan workflow `ADMIN_TU`, `BK`, `KESISWAAN`, `GURU_MAPEL`, dan `ORANG_TUA`, dengan status final mengikuti prioritas:
+
+1. Dispensasi Kesiswaan
+2. Sakit BK
+3. Izin BK
+4. Bolos
+5. Masuk
+6. Alfa
 
 ## Local Setup
 
@@ -35,7 +44,7 @@ Default endpoint ada di `.env`:
 NEXT_PUBLIC_API_BASE_URL=http://localhost:3000/api/v1
 ```
 
-Endpoint API juga bisa diganti langsung dari halaman login. Nilai tersebut disimpan di browser, sehingga frontend tidak perlu rebuild saat alamat API VPS berubah.
+Endpoint API juga bisa diganti langsung dari halaman login. Nilai tersebut dinormalisasi ke `/api/v1` dan disimpan di browser, sehingga frontend tidak perlu rebuild saat alamat API VPS berubah.
 
 ## Useful Commands
 

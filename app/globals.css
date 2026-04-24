@@ -3,16 +3,16 @@
 @tailwind utilities;
 
 :root {
-  --color-canvas: #f5f3ee;
-  --color-surface: #fffdfa;
-  --color-muted: #ebe6dc;
-  --color-ink: #1d2733;
-  --color-line: rgba(29, 39, 51, 0.12);
-  --color-accent: #a64b2a;
-  --color-accent-soft: rgba(166, 75, 42, 0.12);
-  --color-success: #2d8a5c;
-  --color-warning: #c58b18;
-  --color-danger: #c94949;
+  --color-canvas: #f6f8f7;
+  --color-surface: #ffffff;
+  --color-muted: #e7ecea;
+  --color-ink: #17202a;
+  --color-line: rgba(23, 32, 42, 0.12);
+  --color-accent: #0f766e;
+  --color-accent-soft: rgba(15, 118, 110, 0.12);
+  --color-success: #15803d;
+  --color-warning: #b7791f;
+  --color-danger: #be123c;
 }
 
 * {
@@ -25,9 +25,7 @@ html {
 
 body {
   min-height: 100vh;
-  background:
-    radial-gradient(circle at top left, rgba(166, 75, 42, 0.08), transparent 30%),
-    linear-gradient(180deg, #f6f4ef 0%, #f2efe8 100%);
+  background: #f6f8f7;
 }
 
 a {
@@ -43,7 +41,7 @@ textarea {
 }
 
 ::selection {
-  background: rgba(166, 75, 42, 0.18);
+  background: rgba(15, 118, 110, 0.18);
 }
 
 .shell-grid {
@@ -54,7 +52,7 @@ textarea {
 }
 
 .glass-panel {
-  background: rgba(255, 253, 250, 0.82);
+  background: rgba(255, 255, 255, 0.86);
   backdrop-filter: blur(18px);
   border: 1px solid rgba(29, 39, 51, 0.08);
 }

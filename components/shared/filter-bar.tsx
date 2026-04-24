@@ -20,7 +20,7 @@ export function FilterBar({
   showSearch = true
 }: FilterBarProps) {
   return (
-    <div className="flex flex-col gap-3 rounded-[24px] border border-line bg-surface/80 p-4 md:flex-row md:items-center md:justify-between">
+    <div className="flex flex-col gap-3 rounded-lg border border-line bg-surface/80 p-4 md:flex-row md:items-center md:justify-between">
       {showSearch ? (
         <label className="flex min-w-0 flex-1 items-center gap-3 rounded-full border border-line bg-canvas px-4 py-3">
           <Search className="size-4 text-slate-500" />

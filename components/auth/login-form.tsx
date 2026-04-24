@@ -5,35 +5,25 @@ import { motion } from "framer-motion";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect } from "react";
 import { useForm } from "react-hook-form";
-import { z } from "zod";
-import { loginRequest } from "@/lib/api/client";
+import { ApiError } from "@/lib/api/client";
+import { login } from "@/lib/api/domain";
 import {
   DEFAULT_API_BASE_URL,
   getClientApiBaseUrl,
-  isValidApiBaseUrl,
+  normalizeApiBaseUrl,
   persistClientApiBaseUrl,
   resetClientApiBaseUrl
 } from "@/lib/api/endpoint";
 import { getPrimaryRole, getRoleHomePath } from "@/lib/auth/roles";
 import { persistSession } from "@/lib/auth/session";
-
-const schema = z.object({
-  username: z.string().min(3, "Username wajib diisi."),
-  password: z.string().min(6, "Password minimal 6 karakter."),
-  apiBaseUrl: z
-    .string()
-    .min(1, "API endpoint wajib diisi.")
-    .refine(isValidApiBaseUrl, "Masukkan URL API yang valid, contoh: http://IP-VPS:3000/api/v1")
-});
-
-type LoginFormValues = z.infer<typeof schema>;
+import { loginFormSchema, type LoginFormValues } from "@/lib/forms/login";
 
 export function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const redirect = searchParams.get("redirect");
   const form = useForm<LoginFormValues>({
-    resolver: zodResolver(schema),
+    resolver: zodResolver(loginFormSchema),
     defaultValues: {
       username: "",
       password: "",
@@ -59,14 +49,21 @@ export function LoginForm() {
     form.clearErrors("root");
 
     try {
-      persistClientApiBaseUrl(values.apiBaseUrl);
-      const session = await loginRequest(values.username, values.password);
+      const normalizedEndpoint = persistClientApiBaseUrl(values.apiBaseUrl);
+      form.setValue("apiBaseUrl", normalizedEndpoint, { shouldValidate: false });
+      const session = await login(values.username, values.password);
       persistSession(session);
       const primaryRole = getPrimaryRole(session.user.roleCodes);
       router.replace(redirect || (primaryRole ? getRoleHomePath(primaryRole) : "/login"));
-    } catch {
+    } catch (error) {
+      const debugMessage =
+        error instanceof ApiError
+          ? `${error.message} Status ${error.status}.`
+          : error instanceof Error
+            ? error.message
+            : "Kesalahan tidak dikenal.";
       form.setError("root", {
-        message: "Login gagal. Pastikan username dan password benar."
+        message: `Login gagal. Periksa username, password, dan endpoint API. Detail: ${debugMessage}`
       });
     }
   }
@@ -77,7 +74,7 @@ export function LoginForm() {
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.35, ease: "easeOut" }}
       onSubmit={form.handleSubmit(onSubmit)}
-      className="glass-panel w-full max-w-md rounded-[32px] p-6 shadow-panel md:p-8"
+      className="glass-panel w-full max-w-md rounded-lg p-6 shadow-panel md:p-8"
     >
       <p className="text-xs font-semibold uppercase tracking-[0.24em] text-[var(--color-accent)]">
         Masuk ke Sistem
@@ -87,14 +84,23 @@ export function LoginForm() {
         Satu login untuk guru, BK, kesiswaan, admin, dan orang tua.
       </p>
 
-      <div className="mt-6 rounded-[22px] border border-line bg-white/60 p-4">
+      <div className="mt-6 rounded-lg border border-line bg-white/60 p-4">
         <label className="block space-y-2">
           <span className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
             API Endpoint
           </span>
           <input
             {...form.register("apiBaseUrl")}
-            className="w-full rounded-[16px] border border-line bg-canvas px-4 py-3 text-sm outline-none"
+            onBlur={(event) => {
+              try {
+                form.setValue("apiBaseUrl", normalizeApiBaseUrl(event.target.value), {
+                  shouldValidate: true
+                });
+              } catch {
+                form.trigger("apiBaseUrl");
+              }
+            }}
+            className="w-full rounded-lg border border-line bg-canvas px-4 py-3 text-sm outline-none"
             placeholder="http://IP-VPS:3000/api/v1"
           />
           {form.formState.errors.apiBaseUrl ? (
@@ -131,7 +137,7 @@ export function LoginForm() {
           <span className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Username</span>
           <input
             {...form.register("username")}
-            className="w-full rounded-[20px] border border-line bg-canvas px-4 py-3 outline-none"
+            className="w-full rounded-lg border border-line bg-canvas px-4 py-3 outline-none"
             placeholder="Masukkan username"
           />
           {form.formState.errors.username ? (
@@ -143,7 +149,7 @@ export function LoginForm() {
           <input
             type="password"
             {...form.register("password")}
-            className="w-full rounded-[20px] border border-line bg-canvas px-4 py-3 outline-none"
+            className="w-full rounded-lg border border-line bg-canvas px-4 py-3 outline-none"
             placeholder="Masukkan password"
           />
           {form.formState.errors.password ? (
@@ -153,7 +159,7 @@ export function LoginForm() {
       </div>
 
       {form.formState.errors.root ? (
-        <p className="mt-4 rounded-[18px] bg-rose-50 px-4 py-3 text-sm text-rose-700">
+        <p className="mt-4 rounded-lg bg-rose-50 px-4 py-3 text-sm text-rose-700">
           {form.formState.errors.root.message}
         </p>
       ) : null}
